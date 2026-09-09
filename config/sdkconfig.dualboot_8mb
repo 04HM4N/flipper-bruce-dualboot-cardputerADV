@@ -1,0 +1,29 @@
+# =============================================================================
+# Dual-boot override (apply LAST in SDKCONFIG_DEFAULTS chain).
+# Selects the 8 MB dual-OTA partition table (ota_0 = Flipper port,
+# ota_1 = Bruce) for the real Cardputer / Cardputer ADV hardware (8 MB flash).
+# Used by build_and_flash_dualboot.sh; overrides any earlier default table.
+# =============================================================================
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="8MB"
+
+# Flash mode MUST stay DIO: flashing the bootloader in QIO causes a hard WDT
+# boot loop (rst:0x7 TG0WDT_SYS_RST, black screen) on this hardware. DIO is
+# the ESP-IDF build default and verified working on both OTA slots.
+CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+CONFIG_ESPTOOLPY_FLASHMODE="dio"
+
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_dualboot_8mb.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions_dualboot_8mb.csv"
+
+# =============================================================================
+# Dual-boot: disable ESP-IDF's OTA rollback state machine. With rollback
+# enabled the bootloader marks OTA slots PENDING_VERIFY / INVALID unless the
+# app calls esp_ota_mark_app_valid_cancel_rollback(), which neither firmware
+# does — after a menu-driven slot switch the old slot then gets flagged
+# INVALID and the device never boots it again. For menu-driven dual-boot we
+# want: whoever calls esp_ota_set_boot_partition() last wins, permanently.
+# =============================================================================
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=n
+CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK=n

@@ -1,0 +1,26 @@
+# Name,   Type, SubType, Offset,    Size,      Flags
+# -----------------------------------------------------------------------------
+# Bruce-side view of the 16 MB dual-boot layout: identical to
+# partitions_dualboot_16mb.csv, plus a "spiffs" (LittleFS) partition because
+# Bruce hardcodes the partition label "spiffs" for its internal filesystem
+# (src/core/sd_functions.cpp: LittleFS.begin(false, "/littlefs", maxFiles)
+# defaults to the "spiffs" label in the ESP32 Arduino core).
+#
+# The Flipper port does not use this entry - its own table
+# (partitions_dualboot_16mb.csv) omits it so the two tables only differ in a
+# data partition the Flipper firmware never touches. App/OTA offsets and sizes
+# are byte-identical in both files, which is what esp_ota_set_boot_partition()
+# and both bootloaders care about.
+#
+#   ota_0   = ElicoftZ Flipper Zero port (default boot target, 7 MB)
+#   ota_1   = Bruce firmware             (7 MB)
+#   spiffs  = Bruce internal LittleFS    (bruceConfig, U2F creds, templates...)
+#   storage = FAT data partition (shared; used by Flipper as its /ext)
+# -----------------------------------------------------------------------------
+nvs,        data, nvs,      0x9000,    0x4000,
+otadata,    data, ota,      0xd000,    0x2000,
+phy_init,   data, phy,      0xf000,    0x1000,
+ota_0,      app,  ota_0,    0x20000,   0x700000,
+ota_1,      app,  ota_1,    0x720000,  0x700000,
+spiffs,     data, spiffs,   0xe20000,  0x180000,
+storage,    data, fat,      0xfa0000,  0x60000,

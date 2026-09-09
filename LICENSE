@@ -1,0 +1,39 @@
+MIT License
+
+Copyright (c) 2025 cardputer-dualboot contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+----------------------------------------------------------------------------
+Hinweis / Notice
+
+This repository contains an *overlay* for the M5Stack Cardputer dual-boot
+setup. It does NOT contain the upstream firmware sources themselves.
+
+- The ElicoftZ Flipper port (https://github.com/ElicoftZ/Flipper-Zero-meets-
+  M5Stack-Cardputer) and the Bruce firmware (https://github.com/pr3y/Bruce)
+  remain the property of their respective authors and are licensed under
+  their own terms (Bruce: GNU AGPL-3.0). The .patch files under patches/
+  only describe changes against those upstream projects and are provided for
+  interoperability with the upstream codebases they patch.
+- The prebuilt/ images are compiled from those upstream projects and are
+  subject to the upstream licenses. Check the upstream repositories before
+  redistributing them.
+- This overlay itself (scripts, partition tables, sdkconfig overrides,
+  documentation) is released under the MIT license above.

@@ -1,0 +1,24 @@
+diff --git a/applications_user/flipper_zero_rgb_led/application.fam b/applications_user/flipper_zero_rgb_led/application.fam
+index 2b972eb..cb15506 100644
+--- a/applications_user/flipper_zero_rgb_led/application.fam
++++ b/applications_user/flipper_zero_rgb_led/application.fam
+@@ -12,5 +12,6 @@ App(
+     fap_icon="rgb_led_10px.png",
+     fap_category="GPIO",
+     fap_icon_assets="assets",
++    fap_icon_assets_symbol="RGB_LED",   # views/rgb_led_default.c includes <RGB_LED_icons.h>
+    
+ )
+diff --git a/fam_config.py b/fam_config.py
+index 588ff68..484e7a2 100644
+--- a/fam_config.py
++++ b/fam_config.py
+@@ -88,7 +88,7 @@ APPS = [
+     "proto_pirate",
+     "recorder",
+     "snake20",
+-    "tagtinker",
++    # "tagtinker",  # removed: no manifest/sources committed upstream -> breaks FAM generation
+     "tamagotchi_p1",
+     "tetris",
+     "texas_holdem",

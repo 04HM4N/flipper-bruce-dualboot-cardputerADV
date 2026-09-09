@@ -1,0 +1,29 @@
+# Name,   Type, SubType, Offset,    Size,      Flags
+# -----------------------------------------------------------------------------
+# Dual-boot layout for 16 MB flash boards (per spec: Cardputer ADV dual-boot).
+#
+#   ota_0   = ElicoftZ Flipper Zero port   (default boot target, 7 MB)
+#   ota_1   = Bruce firmware               (7 MB)
+#   storage = FAT data partition shared by both firmwares
+#
+# Switching is done via esp_ota_set_boot_partition() + reboot from either
+# firmware ("Switch to Bruce Firmware" in the Flipper lock menu,
+# "Switch to Flipper Port" in Bruce's Config menu).
+# otadata starts erased (0xFF) so the bootloader boots ota_0 by default.
+#
+# IMPORTANT: this file is flashed as-is and used by BOTH firmwares at runtime
+# (the Flipper port ignores the spiffs entry; Bruce mounts it as its internal
+# LittleFS, label "spiffs" is hardcoded in Bruce's src/core/sd_functions.cpp).
+# Byte-identical to bruce/partitions_dualboot_16mb_bruce.csv (kept in sync
+# manually).
+#
+# Bootloader occupies 0x0..0x8000 on the ESP32-S3, the partition table lives at
+# 0x8000 (CONFIG_PARTITION_TABLE_OFFSET).
+# -----------------------------------------------------------------------------
+nvs,        data, nvs,      0x9000,    0x4000,
+otadata,    data, ota,      0xd000,    0x2000,
+phy_init,   data, phy,      0xf000,    0x1000,
+ota_0,      app,  ota_0,    0x20000,   0x700000,
+ota_1,      app,  ota_1,    0x720000,  0x700000,
+spiffs,     data, spiffs,   0xe20000,  0x180000,
+storage,    data, fat,      0xfa0000,  0x60000,

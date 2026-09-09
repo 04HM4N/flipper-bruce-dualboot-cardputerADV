@@ -1,0 +1,27 @@
+# Name,   Type, SubType, Offset,    Size,      Flags
+# -----------------------------------------------------------------------------
+# Dual-boot layout for the REAL M5Stack Cardputer / Cardputer ADV hardware
+# (ESP32-S3FN8, 8 MB flash, no PSRAM). This is the hardware-correct twin of
+# partitions_dualboot_16mb.csv: the official ADV ships with 8 MB flash
+# (docs.m5stack.com/en/core/Cardputer-Adv), so 7+7 MB OTA slots do not fit.
+#
+# Slot sizes follow the real image sizes (no feature loss on either side):
+#   Flipper port ~2.8 MB  -> ota_0 = 3.0 MB
+#   Bruce        ~4.1 MB  -> ota_1 = 3.9375 MB (fits with ~2% headroom)
+#
+# Same switching mechanism: esp_ota_set_boot_partition() + reboot from either
+# firmware. otadata erased (0xFF) -> boots ota_0 (Flipper port) by default.
+#
+# This file is flashed as-is (via build_and_flash_dualboot.sh) and is used
+# by BOTH firmwares at runtime: the Flipper port ignores the spiffs entry,
+# Bruce mounts it as its internal LittleFS (label "spiffs" is hardcoded in
+# src/core/sd_functions.cpp). Byte-identical to
+# bruce/partitions_dualboot_8mb_bruce.csv (kept in sync manually).
+# -----------------------------------------------------------------------------
+nvs,        data, nvs,      0x9000,    0x4000,
+otadata,    data, ota,      0xd000,    0x2000,
+phy_init,   data, phy,      0xf000,    0x1000,
+ota_0,      app,  ota_0,    0x20000,   0x300000,
+ota_1,      app,  ota_1,    0x320000,  0x3f0000,
+spiffs,     data, spiffs,   0x710000,  0xc0000,
+storage,    data, fat,      0x7d0000,  0x30000,

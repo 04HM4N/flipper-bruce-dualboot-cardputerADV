@@ -1,0 +1,26 @@
+# =============================================================================
+# Dual-boot override (apply LAST in SDKCONFIG_DEFAULTS chain).
+# Selects the 16 MB dual-OTA partition table (ota_0 = Flipper port,
+# ota_1 = Bruce) and the matching flash size. Used by
+# build_and_flash_dualboot.sh; for boards whose sdkconfig defaults a different
+# table (e.g. partitions_singleapp_large.csv), this file wins because it is
+# merged last.
+# =============================================================================
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
+
+# Flash mode MUST stay DIO: flashing the bootloader in QIO causes a hard WDT
+# boot loop (rst:0x7 TG0WDT_SYS_RST, black screen) on this hardware. DIO is
+# the ESP-IDF build default and verified working on both OTA slots.
+CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+CONFIG_ESPTOOLPY_FLASHMODE="dio"
+
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions_dualboot_16mb.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions_dualboot_16mb.csv"
+
+# Dual-boot: disable ESP-IDF's OTA rollback state machine (see
+# sdkconfig.dualboot_8mb for the full explanation). Menu-driven slot switches
+# must be permanent, not subject to PENDING_VERIFY/INVALID bookkeeping.
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=n
+CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK=n

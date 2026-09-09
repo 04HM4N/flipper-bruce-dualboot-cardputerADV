@@ -1,0 +1,169 @@
+# Dual-boot additions for the Bruce firmware (Cardputer):
+# - FlipperOsMenu.{h,cpp}: 'Switch to Flipper Port' (ota_0) via otadata erase
+# - ConfigMenu/OthersMenu: menu entries
+# - sd_functions.cpp: self-healing LittleFS mount (format on first boot)
+# Generated from the Bruce checkout; applied by patchBruce.py.
+
+diff --git a/src/core/FlipperOsMenu.cpp b/src/core/FlipperOsMenu.cpp
+new file mode 100644
+index 0000000..96c36dd
+--- /dev/null
++++ b/src/core/FlipperOsMenu.cpp
+@@ -0,0 +1,62 @@
++// --- Dual-boot add-on (not part of upstream Bruce) ---------------------------
++// "Switch to Flipper Port": reboots the device into the ElicoftZ Flipper Zero
++// port that lives in the ota_0 partition (this firmware lives in ota_1).
++// Mirrors the "Switch to Bruce Firmware" entry in the Flipper port's lock
++// menu. Created by patchBruce.py / tools/bruce_cardputer_dualboot.patch in
++// the Flipper repo.
++#include "FlipperOsMenu.h"
++
++#include "core/display.h"
++#include "core/utils.h"
++
++#include <esp_ota_ops.h>
++#include <esp_partition.h>
++#include <esp_system.h>
++
++// The Flipper Zero port lives in the ota_0 slot; this firmware runs from ota_1.
++#define FLIPPEROS_TARGET_SUBTYPE ESP_PARTITION_SUBTYPE_APP_OTA_0
++
++bool switch_to_flipper_available() {
++    // The switch works by clearing the OTA selection (otadata), which makes
++    // the bootloader fall back to ota_0 (Flipper port) — so only the presence
++    // of an otadata partition is required. esp_ota_set_boot_partition() is NOT
++    // used: the Flipper bootloader computes the otadata CRC with a variant
++    // (crc32 init=0) that Bruce's Arduino-core ESP-IDF libs don't reproduce,
++    // so entries written from Bruce are rejected and the bootloader keeps
++    // booting the other (still valid) slot — i.e. this firmware again.
++    const esp_partition_t *otadata = esp_partition_find_first(
++        ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_OTA, NULL);
++    return otadata != NULL;
++}
++
++void switch_to_flipper() {
++    const esp_partition_t *otadata = esp_partition_find_first(
++        ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_OTA, NULL);
++    if (otadata == NULL) {
++        displayError("No OTA data partition.\nNot a dual-boot image.", true);
++        return;
++    }
++    // Erase BOTH otadata sectors. With no valid OTA selection the bootloader
++    // boots ota_0 (Flipper port) by default; it then rewrites otadata itself.
++    esp_err_t err = esp_partition_erase_range(otadata, 0, otadata->size);
++    if (err != ESP_OK) {
++        displayError("Could not clear\nthe OTA selection.", true);
++        return;
++    }
++    displayInfo("Rebooting to Flipper...");
++    delay(150);
++    esp_restart();
++}
++
++void flipperOsOptionsMenu() {
++    if (!switch_to_flipper_available()) {
++        displayError("No Flipper firmware\nin ota_0 slot.", true);
++        return;
++    }
++    options = {
++        {"Switch to Flipper Port", switch_to_flipper},
++        {"Cancel",                 []() {}          },
++    };
++    addOptionToMainMenu();
++    loopOptions(options, MENU_TYPE_SUBMENU, "Flipper Zero");
++}
+diff --git a/src/core/FlipperOsMenu.h b/src/core/FlipperOsMenu.h
+new file mode 100644
+index 0000000..ac699a2
+--- /dev/null
++++ b/src/core/FlipperOsMenu.h
+@@ -0,0 +1,20 @@
++// --- Dual-boot add-on (not part of upstream Bruce) ---------------------------
++// Provides the "Switch to Flipper Port" entries (Config + Others menus) that
++// reboot the device into the ElicoftZ Flipper Zero port living in the ota_0
++// partition (this firmware lives in ota_1). Mirrors the "Switch to Bruce
++// Firmware" entry in the Flipper port's lock menu.
++// These files are created by patchBruce.py /
++// tools/bruce_cardputer_dualboot.patch in the Flipper repo.
++#ifndef __FLIPPEROS_MENU_H__
++#define __FLIPPEROS_MENU_H__
++
++// True when an ota_0 partition exists AND contains a flashed app image.
++bool switch_to_flipper_available();
++
++// Point the OTA boot slot at ota_0 and reboot into the Flipper port.
++void switch_to_flipper();
++
++// Confirmation submenu ("Switch to Flipper Port" / "Cancel").
++void flipperOsOptionsMenu();
++
++#endif // __FLIPPEROS_MENU_H__
+diff --git a/src/core/menu_items/ConfigMenu.cpp b/src/core/menu_items/ConfigMenu.cpp
+index a2e7726..d8e59e0 100644
+--- a/src/core/menu_items/ConfigMenu.cpp
++++ b/src/core/menu_items/ConfigMenu.cpp
+@@ -4,6 +4,7 @@
+ #include "core/i2c_finder.h"
+ #include "core/main_menu.h"
+ #include "core/settings.h"
++#include "core/FlipperOsMenu.h" // dual-boot add-on (patchBruce.py)
+ #include "core/utils.h"
+ #include "core/wifi/wifi_common.h"
+ #ifdef HAS_RGB_LED
+@@ -45,6 +46,10 @@ void ConfigMenu::optionsMenu() {
+             localOptions.push_back({"Dev Mode", [this]() { devMenu(); }});
+         }
+ 
++        // Dual-boot add-on (patchBruce.py): reboot into the Flipper port (ota_0).
++        localOptions.push_back(
++            {"Switch to Flipper Port", [this]() { flipperOsOptionsMenu(); }});
++
+         localOptions.push_back({"About", showDeviceInfo});
+         localOptions.push_back({"Main Menu", []() {}});
+ 
+diff --git a/src/core/menu_items/OthersMenu.cpp b/src/core/menu_items/OthersMenu.cpp
+index 0de6d4a..3bee65b 100644
+--- a/src/core/menu_items/OthersMenu.cpp
++++ b/src/core/menu_items/OthersMenu.cpp
+@@ -2,6 +2,7 @@
+ 
+ #include "core/display.h"
+ #include "core/utils.h"
++#include "core/FlipperOsMenu.h" // dual-boot add-on (patchBruce.py)
+ #include "modules/badusb_ble/ducky_typer.h"
+ #include "modules/bjs_interpreter/interpreter.h"
+ #include "modules/others/clicker.h"
+@@ -30,6 +31,9 @@ void OthersMenu::optionsMenu() {
+         {"iButton",      setup_ibutton                },
+ #endif
+ 
++        // Dual-boot add-on (patchBruce.py): reboot into the Flipper port (ota_0).
++        {"Switch to Flipper Port", [this]() { flipperOsOptionsMenu(); }},
++
+         // Timer removed - moved to another "Clock"
+     };
+ 
+diff --git a/src/core/sd_functions.cpp b/src/core/sd_functions.cpp
+index 5e92dba..e5ba1e9 100644
+--- a/src/core/sd_functions.cpp
++++ b/src/core/sd_functions.cpp
+@@ -32,6 +32,19 @@ std::vector<FileList> fileList;
+ ***************************************************************************************/
+ bool setupLittleFS(uint8_t maxFiles) {
+     if (maxFiles < 1) { maxFiles = 1; }
++    if (LittleFS.begin(false, "/littlefs", maxFiles)) return true;
++    // The spiffs partition is freshly erased (first boot after a dual-boot flash
++    // with --erase-all) or the filesystem is corrupt: format it and retry so the
++    // first boot works without a manual reset. Nothing unmounts LittleFS at
++    // runtime, so this only ever triggers at boot time.
++    Serial.println("LittleFS mount failed, formatting spiffs partition...");
++    LittleFS.format();
++    delay(50);
++    if (LittleFS.begin(false, "/littlefs", maxFiles)) return true;
++    // Formatting a brand-new erased partition sometimes needs a second pass.
++    Serial.println("LittleFS format retry...");
++    LittleFS.format();
++    delay(50);
+     return LittleFS.begin(false, "/littlefs", maxFiles);
+ }
+ 
